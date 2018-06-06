@@ -1,0 +1,13 @@
+# IDEA
+
+.idea
+
+# coco specific files
+
+ppdata
+python/cocoex.egg-info
+python/build
+python/cython
+python/dist
+python/exdata
+python/ppdata
