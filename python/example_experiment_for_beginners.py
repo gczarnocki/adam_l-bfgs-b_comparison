@@ -20,11 +20,13 @@ import cocoex, cocopp  # experimentation and post-processing modules
 import scipy.optimize  # to define the solver to be benchmarked
 from numpy.random import rand  # for randomised restarts
 import os, webbrowser  # to show post-processed results in the browser
+import my_solver
 
 ### input
 suite_name = "bbob"
 output_folder = "scipy-optimize-fmin"
 fmin = scipy.optimize.fmin
+fmin = my_solver.adam
 budget_multiplier = 1  # increase to 10, 100, ...
 
 ### prepare
@@ -39,7 +41,8 @@ for problem in suite:  # this loop will take several minutes or longer
     # apply restarts while neither the problem is solved nor the budget is exhausted
     while (problem.evaluations < problem.dimension * budget_multiplier
            and not problem.final_target_hit):
-        fmin(problem, x0, disp=False)  # here we assume that `fmin` evaluates the final/returned solution
+        #fmin(problem, x0, disp=False)  # here we assume that `fmin` evaluates the final/returned solution
+        fmin(problem, x0)
         x0 = problem.lower_bounds + ((rand(problem.dimension) + rand(problem.dimension)) *
                     (problem.upper_bounds - problem.lower_bounds) / 2)
     minimal_print(problem, final=problem.index == len(suite) - 1)
