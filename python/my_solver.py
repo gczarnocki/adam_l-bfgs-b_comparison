@@ -35,6 +35,8 @@ def adam(fun, x0, alpha=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-8):
     v_t = 0
     t = 0
 
+    conv_epsilon=1e-8
+
     while 1:  # till it gets converged
         t += 1
         g_t = grad_func(theta_0)  # computes the gradient of the stochastic function
@@ -45,5 +47,11 @@ def adam(fun, x0, alpha=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-8):
         theta_0_prev = theta_0
         theta_0 = theta_0 - (alpha * m_cap) / (np.sqrt(v_cap) + epsilon)  # updates the parameters
 
-        if (np.abs(theta_0 - theta_0_prev) < 1e-6).all():
+        if t % 1e6 == 0:
+            conv_epsilon = conv_epsilon * 10
+
+        if np.abs(fun(theta_0) - fun.best_observed_fvalue1).sum() < conv_epsilon:
+            break
+
+        if np.abs(theta_0 - theta_0_prev).sum() < conv_epsilon:
             break
