@@ -90,7 +90,7 @@ def default_observer_options(budget_=None, suite_name_=None, current_batch_=None
 # ===============================================
 # loops over a benchmark problem suite
 # ===============================================
-def batch_loop(solver, suite, observer, budget,
+def batch_loop(adam_params, solver, suite, observer, budget,
                max_runs, current_batch, number_of_batches):
     """loop over all problems in `suite` calling
     `coco_optimize(solver, problem, budget * problem.dimension, max_runs)`
@@ -109,7 +109,7 @@ def batch_loop(solver, suite, observer, budget,
             continue
         observer.observe(problem)
         short_info.print(problem) if verbose else None
-        runs = coco_optimize(solver, problem, budget * problem.dimension,
+        runs = coco_optimize(adam_params, solver, problem, budget * problem.dimension,
                              max_runs)
         if verbose:
             print_flush("!" if runs > 2 else ":" if runs > 1 else ".")
@@ -129,7 +129,7 @@ def batch_loop(solver, suite, observer, budget,
 #===============================================
 # interface: ADD AN OPTIMIZER BELOW
 #===============================================
-def coco_optimize(solver, fun, max_evals, max_runs=1e9):
+def coco_optimize(adam_params, solver, fun, max_evals, max_runs=1e9):
     """`fun` is a callable, to be optimized by `solver`.
 
     The `solver` is called repeatedly with different initial solutions
@@ -149,7 +149,7 @@ def coco_optimize(solver, fun, max_evals, max_runs=1e9):
         remaining_evals = max_evals - fun.evaluations - fun.evaluations_constraints
         x0 = center + (restarts > 0) * 0.8 * range_ * (
                 np.random.rand(fun.dimension) - 0.5)
-        fun(x0)  # can be incommented, if this is done by the solver
+        #fun(x0)  # can be incommented, if this is done by the solver
 
         if solver.__name__ in ("random_search", ):
             solver(fun, fun.lower_bounds, fun.upper_bounds,
@@ -180,13 +180,7 @@ def coco_optimize(solver, fun, max_evals, max_runs=1e9):
             solver(fun, x0)
         elif solver.__name__ == 'adam':
             x0 = fun.initial_solution
-            solver(fun, x0)
-
-############################ ADD HERE ########################################
-        # ### IMPLEMENT HERE THE CALL TO ANOTHER SOLVER/OPTIMIZER ###
-        # elif solver.__name__ == ...:
-        #     CALL MY SOLVER, interfaces vary
-##############################################################################
+            solver(fun, x0, max_evals, adam_params)
         else:
             solver(fun, x0)
 
@@ -233,7 +227,7 @@ observer_options = ObserverOptions({  # is (inherited from) a dictionary
 # ===============================================
 # run (main)
 # ===============================================
-def main(budget=budget,
+def main(adam_params, budget=budget,
          max_runs=max_runs,
          current_batch=current_batch,
          number_of_batches=number_of_batches):
@@ -254,7 +248,7 @@ def main(budget=budget,
         print('Batch usecase, make sure you run *all* %d batches.\n' %
               number_of_batches)
     t0 = time.clock()
-    batch_loop(SOLVER, suite, observer, budget, max_runs,
+    batch_loop(adam_params, SOLVER, suite, observer, budget, max_runs,
                current_batch, number_of_batches)
     print(", %s (%s total elapsed time)." %
             (time.asctime(), ascetime(time.clock() - t0)))
@@ -268,6 +262,9 @@ def main(budget=budget,
 # ===============================================
 if __name__ == '__main__':
     """read input parameters and call `main()`"""
+
+    adam_params = []
+
     if len(sys.argv) < 2 or sys.argv[1] in ["--help", "-h"]:
             print(__doc__)
             print("Recognized suite names: " + str(cocoex.known_suite_names))
@@ -278,13 +275,12 @@ if __name__ == '__main__':
                 (suite_name, str(cocoex.known_suite_names)))
     if len(sys.argv) > 2:
         budget = float(sys.argv[2])
-    if len(sys.argv) > 3:
-        current_batch = int(sys.argv[3])
-    if len(sys.argv) > 4:
-        number_of_batches = int(sys.argv[4])
-    if len(sys.argv) > 5:
-        messages = ['Argument "%s" disregarded (only 4 arguments are recognized).' % sys.argv[i]
-            for i in range(5, len(sys.argv))]
-        messages.append('See "python example_experiment.py -h" for help.')
-        raise ValueError('\n'.join(messages))
-    main(budget, max_runs, current_batch, number_of_batches)
+    if len(sys.argv) == 7:
+        adam_params = [
+            float(sys.argv[3]),
+            float(sys.argv[4]),
+            float(sys.argv[5]),
+            float(sys.argv[6])
+        ]
+
+    main(adam_params, budget, max_runs, current_batch, number_of_batches)

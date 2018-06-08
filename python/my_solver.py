@@ -26,18 +26,25 @@ def l_bfgs_b(fun, x0):
     )
 
 
-def adam(fun, x0, alpha=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-8):
+def adam(fun, x0, max_evals, adam_params):
     def grad_func(x):
         return scipy.optimize.approx_fprime(np.array(x), fun, epsilon=1e-6)
+
+    alpha = adam_params[0]
+    beta_1 = adam_params[1]
+    beta_2 = adam_params[2]
+    epsilon = adam_params[3]
 
     theta_0 = x0  # initialize the vector
     m_t = 0
     v_t = 0
     t = 0
 
-    conv_epsilon=1e-8
+    conv_epsilon = 1e-6
 
-    while 1:  # till it gets converged
+    run = True
+
+    while run:  # till it gets converged
         t += 1
         g_t = grad_func(theta_0)  # computes the gradient of the stochastic function
         m_t = beta_1 * m_t + (1 - beta_1) * g_t  # updates the moving averages of the gradient
@@ -47,11 +54,11 @@ def adam(fun, x0, alpha=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-8):
         theta_0_prev = theta_0
         theta_0 = theta_0 - (alpha * m_cap) / (np.sqrt(v_cap) + epsilon)  # updates the parameters
 
-        if t % 1e6 == 0:
-            conv_epsilon = conv_epsilon * 10
+        if t > max_evals:
+            run = False
 
         if np.abs(fun(theta_0) - fun.best_observed_fvalue1).sum() < conv_epsilon:
-            break
+            run = False
 
         if np.abs(theta_0 - theta_0_prev).sum() < conv_epsilon:
-            break
+            run = False
